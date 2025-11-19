@@ -1,0 +1,45 @@
+name: 워크리스트 UI 모듈 테스트 서버 배포
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - worklist-ui/**
+jobs:
+  test-and-deploy-to-test:
+    runs-on: ubi9
+    env:
+      BASE_IMAGE: default/eclipse-temurin:21-jre-ubi9-minimal
+      SUBMODULE: worklist-ui
+      GITHUB_USERNAME: ${{ secrets._GITHUB_USER }}
+      GITHUB_TOKEN: ${{ secrets._GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
+        with:
+          gradle-version: 8.9
+      - name: Build & Test
+        run: gradle $SUBMODULE:build
+      - name: Unpack
+        run: |
+          unzip -o $SUBMODULE/build/libs/*.war "**/*.js" "**/*.css" "*.html" -d static
+      - name: Deploy
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_CANDIDATE }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CANDIDATE }}
+          AWS_DEFAULT_REGION: null
+          S3_BUCKET: bucket
+          S3_ENDPOINT: https://s3.apps.gcgenome.com
+          DESTINATION: static
+        run: |
+          echo "GIT_REF_NAME=$GITHUB_REF_NAME"
+          echo "BUCKET=$S3_BUCKET"
+          echo "aws s3 sync --endpoint-url $S3_ENDPOINT static s3://$S3_BUCKET/$DESTINATION --acl public-read"
+          aws s3 sync --endpoint-url $S3_ENDPOINT static s3://$S3_BUCKET/$DESTINATION --acl public-read

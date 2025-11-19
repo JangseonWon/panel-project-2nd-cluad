@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module rename-to="com.gcgenome.lims.interpretation">
+	<inherits name="net.sayaya.Rx"/>
+	<inherits name="net.sayaya.Chart"/>
+	<inherits name="com.gcgenome.lims.Service"/>
+	<inherits name="com.gcgenome.lims.Panel"/>
+	<entry-point class="com.gcgenome.lims.client.Main"/>
+	<source path="dto"/>
+	<source path="api"/>
+	<source path="test"/>
+	<source path="client"/>
+	<collapse-all-properties/>
+</module>

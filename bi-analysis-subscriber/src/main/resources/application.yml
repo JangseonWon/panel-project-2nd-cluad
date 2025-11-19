@@ -1,0 +1,15 @@
+spring:
+  application.name: analysis-crawler2
+  elasticsearch:
+    uris: gemini:9200,pisces:9200,libra:9200,leo:9200
+  r2dbc:
+    url: r2dbc:postgresql://gemini:5432/lims
+    compatibility-mode: true
+    username: panel
+    password: snubi1004
+subscriber:
+  hema:
+    path: src/test/resources/hema
+    interval: 1000
+    sheet: 05b2b300-a1ae-4200-a32a-c5d9e6e0d7d3
+webhook.url: https://wh.jandi.com/connect-api/webhook/17558388/4d78e3b66d3460a3f88378295966de30

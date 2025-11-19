@@ -1,0 +1,81 @@
+spring:
+  application:
+    name: panel-service-gateway
+  main:
+    web-application-type: reactive
+  cloud:
+    zookeeper:
+      connect-string: localhost:2181
+      discovery:
+        root: /panel-services
+    gateway:
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedHeaders:
+              - AUTHORIZATION
+              - X-USER-ID
+              - Content-Type
+            exposedHeaders:
+              - X-Total-Count
+              - X-Total-Page
+              - X-Current-Page
+            allowedMethods:
+              - OPTIONS
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+      default-filters:
+        - StripPrefix=1
+        - AuditFilter
+      routes:
+        - id: interpretation2
+          uri: lb://interpretation2-service
+          predicates:
+            - Header=Content-Type, ^application/vnd\.lims\.v1[+json]*
+            - Path= /panel-service/services/**, /panel-service/genes/**, /panel-service/samples/*/services/*/interpretation, /panel-service/samples/*/services/*/auto-interpret, /panel-service/samples/*/services/*/negative-interpret
+        - id: snv-api
+          uri: lb://snv2-service
+          predicates:
+            - Header=Content-Type, ^application/vnd\.lims\.v1[+json]*
+            - Path= /panel-service/samples/*/services/*/snvs, /panel-service/samples/*/services/*/snvs/**, /panel-service/samples/*/services/*/batches/*/*/snvs, /panel-service/panels
+        - id: snv-api-tmp
+          uri: lb://snv2-service
+          predicates:
+            - Path= /panel-service/samples/*/analysis
+        - id: snv-api
+          uri: lb://snv-service
+          predicates:
+            - Path= /panel-service/samples/*/services/*/snvs, /panel-service/samples/*/services/*/snvs/**, /panel-service/samples/*/services/*/batches/*/*/snvs, /panel-service/panels
+        - id: sample
+          uri: lb://sample-service
+          predicates:
+            - Path= /panel-service/sample.html, /panel-service/com.greencross.lims.sample/**, /panel-service/css/sample.css, /panel-service/samples/**, /panel-service/panels
+        - id: worklist
+          uri: lb://worklist-service
+          predicates:
+            - Path= /panel-service/worklist/**, /panel-service/worklists, /panel-service/worklists/**, /panel-service/queue, /panel-service/queue/**, /panel-service/sample/*/service/*/queue
+        - id: trello
+          uri: lb://trello-service
+          predicates:
+            - Path= /panel-service/trello.html, /panel-service/com.greencross.lims.trello/**, /panel-service/css/trello.css, /panel-service/issues, /panel-service/issues/**
+        - id: reading
+          uri: lb://reading-service
+          predicates:
+            - Path= /panel-service/reading.html, /panel-service/com.greencross.lims.reading/**, /panel-service/css/reading.css, /panel-service/readings/**, /panel-service/panels
+        - id: misc
+          uri: lb://miscellaneous-service
+          predicates:
+            - Path= /panel-service/misc.html, /panel-service/com.greencross.lims.misc/**, /panel-service/css/misc.css, /panel-service/misc/**
+        - id: variant-snv
+          uri: lb://variant-snv-service
+          predicates:
+            - Path= /panel-service/varsnv.html, /panel-service/com.gcgenome.lims.varsnv/**, /panel-service/css/snv.css, /panel-service/snvs/**
+server:
+  port: 19643
+
+

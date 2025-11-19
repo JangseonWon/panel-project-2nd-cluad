@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: snv-marker
+  main:
+    web-application-type: reactive
+  r2dbc:
+    url: r2dbc:postgresql://gemini:5432/lims
+    username: panel
+    password: snubi1004
+    pool:
+      initial-size: 1
+      max-size: 1
+      max-idle-time: 30m
+      validation-query: SELECT 1
+#logging:
+#  level:
+#    io.r2dbc.postgresql.QUERY: DEBUG
+#    io.r2dbc.postgresql.PARAM: DEBUG
+server:
+  port: 0

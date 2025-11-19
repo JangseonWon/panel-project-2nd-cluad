@@ -1,0 +1,182 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: panel-worklist
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/instance: panel
+data:
+  application.yaml: |
+    spring:
+      application.name: panel-worklist
+      r2dbc:
+        {{- if eq .Release.Namespace "lims-test" }}
+        url: r2dbc:postgresql://postgresql-rw:5432/lims
+        {{- else }}
+        url: r2dbc:postgresql://172.19.208.171:5432/lims
+        {{- end }}
+        compatibility-mode: true
+        username: ${postgres.username}
+        password: ${postgres.password}
+      cloud:
+        function:
+          definition: panel
+        stream:
+          bindings:
+            panel-out-0:
+              destination: panel-event
+          kafka:
+            binder:
+              {{- if eq .Release.Namespace "lims-test" }}
+              brokers: kafka-kafka-bootstrap:9092
+              {{- else }}
+              brokers: 172.19.208.171:9092, 172.19.208.172:9092, 172.19.208.101:9092, 172.19.208.102:9092, 172.19.208.111:9092
+              {{- end }}
+              configuration.max.request.size: 67109632
+              auto-add-partitions: true
+    management:
+      endpoint:
+        health:
+          probes:
+            enabled: true
+    {{- if eq .Release.Namespace "lims-test" }}
+    logging:
+      level:
+        io:
+          r2dbc:
+            postgresql:
+              QUERY: DEBUG
+              PARAM: DEBUG
+    {{- end }}
+    server:
+      port: 8080
+
+---
+
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+metadata:
+  name: panel-worklist
+  namespace: {{ .Release.Namespace }}
+spec:
+  lookupPolicy:
+    local: false
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: panel-worklist
+spec:
+  selector:
+    app: panel-worklist
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  annotations:
+    alpha.image.policy.openshift.io/resolve-names: '*'
+    app.openshift.io/route-disabled: 'false'
+    app.openshift.io/vcs-uri: 'https://github.com/GC-Genome/panel-project-2nd/tree/master/worklist'
+    configmap.reloader.stakater.com/reload: "panel-worklist"
+    secret.reloader.stakater.com/reload: "postgresql-app"
+  name: panel-worklist
+  namespace: {{ .Release.Namespace }}
+  finalizers:
+    - foregroundDeletion
+  labels:
+    app: panel-worklist
+    app.kubernetes.io/component: panel
+    app.kubernetes.io/instance: panel
+    app.kubernetes.io/name: panel
+    app.kubernetes.io/part-of: panel
+    app.openshift.io/runtime: spring-boot
+    app.openshift.io/runtime-namespace: {{ .Release.Namespace }}
+    app.openshift.io/runtime-version: latest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: panel-worklist
+  template:
+    metadata:
+      labels:
+        app: panel-worklist
+        version: 0.0.1
+        deployment: panel-worklist
+    spec:
+      volumes:
+        - name: config
+          configMap:
+            name: panel-worklist
+            defaultMode: 420
+      containers:
+        - name: panel-worklist
+        {{- if index .Values "panel-worklist" }}
+          image: {{ index .Values "panel-worklist" "image" "name" }}:{{ index .Values "panel-worklist" "image" "tag" }}
+        {{- else }}
+          image: image-registry.openshift-image-registry.svc:5000/{{ .Release.Namespace }}/panel-worklist:latest
+        {{- end }}
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+          env:
+            - name: postgres.username
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: postgresql-app
+            - name: postgres.password
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: postgresql-app
+            - name: TZ
+              value: Asia/Seoul
+          volumeMounts:
+            - name: config
+              mountPath: /app/resources/application.yaml
+              subPath: application.yaml
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+              scheme: HTTP
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+              scheme: HTTP
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+      imagePullSecrets: []
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  revisionHistoryLimit: 0
+  progressDeadlineSeconds: 600
+  paused: false

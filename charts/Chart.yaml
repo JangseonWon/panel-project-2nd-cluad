@@ -1,0 +1,7 @@
+annotations:
+  charts.openshift.io/name: panel
+apiVersion: v2
+appVersion: 1.14.0
+kubeVersion: '>= 1.20.0-0'
+name: panel
+version: 0.1.0

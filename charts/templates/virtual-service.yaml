@@ -1,0 +1,102 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  labels:
+    app.kubernetes.io/instance: {{ .Release.Namespace }}-panel
+  name: panel-project
+  namespace: {{ .Release.Namespace }}
+spec:
+  gateways:
+    - {{ .Release.Namespace }}/gateway-http
+  hosts:
+    - panel-gateway-{{ .Values.host }}
+  http:
+    - match:
+        - uri:
+            prefix: /messages
+      route:
+        - destination:
+            host: panel-event-broadcaster
+            port:
+              number: 80
+    - match:
+        - uri:
+            regex: ^/worklists/(.*)/(.*)/(?:sequencing|batch|sequencing-index)
+        - uri:
+            prefix: /sequencings
+      route:
+        - destination:
+            host: panel-sequencing
+            port:
+              number: 80
+    - match:
+        - uri:
+            prefix: /worklists
+        - uri:
+            prefix: /works
+      route:
+        - destination:
+            host: panel-worklist
+            port:
+              number: 80
+    - match:
+        - uri:
+            exact: /panel-worklist.html
+      rewrite:
+        uri: /{{ .Values.bucket }}/static/panel-worklist.html
+      route:
+        - destination:
+            host: >-
+              rook-ceph-rgw-ocs-storagecluster-cephobjectstore.openshift-storage.svc.cluster.local
+            port:
+              number: 80
+    - match:
+        - uri:
+            prefix: /com.gcgenome.lims.panel
+      rewrite:
+        uri: >-
+          /{{ .Values.bucket }}/static/com.gcgenome.lims.panel
+      route:
+        - destination:
+            host: >-
+              rook-ceph-rgw-ocs-storagecluster-cephobjectstore.openshift-storage.svc.cluster.local
+            port:
+              number: 80
+    - match:
+        - uri:
+            prefix: /css
+      rewrite:
+        uri: /bucket/static/css
+      route:
+        - destination:
+            host: rook-ceph-rgw-ocs-storagecluster-cephobjectstore.openshift-storage.svc.cluster.local
+            port:
+              number: 80
+    - match:
+        - uri:
+            prefix: /js
+      rewrite:
+        uri: /bucket/static/js
+      route:
+        - destination:
+            host: rook-ceph-rgw-ocs-storagecluster-cephobjectstore.openshift-storage.svc.cluster.local
+            port:
+              number: 80
+    - match:
+        - uri:
+            prefix: /font
+      rewrite:
+        uri: /bucket/static/font
+      route:
+        - destination:
+            host: rook-ceph-rgw-ocs-storagecluster-cephobjectstore.openshift-storage.svc.cluster.local
+            port:
+              number: 80
+    - match:
+        - uri:
+            prefix: /services
+      route:
+        - destination:
+            host: panel-worklist
+            port:
+              number: 80

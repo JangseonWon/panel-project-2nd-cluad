@@ -1,0 +1,38 @@
+name: 시퀀싱 모듈 테스트 서버 배포
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - sequencing/**
+jobs:
+  test-and-deploy-to-test:
+    runs-on: ubi9
+    env:
+      BASE_IMAGE: default/eclipse-temurin:21-jre-ubi9-minimal
+      SUBMODULE: sequencing
+      IMAGE: lims-test/panel-sequencing
+      GITHUB_USERNAME: ${{ secrets._GITHUB_USER }}
+      GITHUB_TOKEN: ${{ secrets._GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
+        with:
+          gradle-version: 8.9
+      - name: Build
+        run: gradle $SUBMODULE:jar
+      - name: Test & Report
+        run: gradle $SUBMODULE:koverXmlReport
+      - name: Deploy
+        run: |
+          oc registry login
+          gradle $SUBMODULE:jib \
+            -Djib.from.image=image-registry.apps.gcgenome.com/$BASE_IMAGE \
+            -Djib.to.image=image-registry.apps.gcgenome.com/$IMAGE:latest \

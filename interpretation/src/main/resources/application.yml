@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: interpretation2-service
+  main:
+    web-application-type: reactive
+  cloud:
+    zookeeper:
+      connect-string: localhost:2181
+      discovery:
+        root: /panel-services
+  r2dbc:
+    url: r2dbc:postgresql://gemini:5432/lims
+    username: panel
+    password: snubi1004
+    pool:
+      initial-size: 10
+      max-size: 15
+      max-idle-time: 30m
+      validation-query: SELECT 1
+  elasticsearch:
+    uris: gemini:9200,pisces:9200
+logging:
+  level:
+    io.r2dbc.postgresql.QUERY: DEBUG
+    io.r2dbc.postgresql.PARAM: DEBUG
+server:
+  port: 62413
+event:
+  queue:
+    servers: dd

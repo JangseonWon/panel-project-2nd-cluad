@@ -1,0 +1,10 @@
+subscriber:
+  hema:
+    path: src/test/resources/hema
+    interval: 1000
+    sheet: 05b2b300-a1ae-4200-a32a-c5d9e6e0d7d3
+  hrd:
+    path: src/test/resources/hrd
+    interval: 1000
+    sheet: b83c54fc-9dd9-11eb-bb6b-e4434b780b98
+webhook.url: https://wh.jandi.com/connect-api/webhook/17558388/4d78e3b66d3460a3f88378295966de30
